@@ -54,7 +54,7 @@ def response(environ):
 
     if not len(parts) or parts[0] == '':
         # by default redirect to the info.json file
-        return '308 Permanent Redirect', [
+        return '303 See Other', [
             ('Location', '/%s/info.json' % (pid,)),
         ]
 
