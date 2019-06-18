@@ -62,6 +62,5 @@ def response(environ):
     url = '/'.join(url)
 
     return '200 OK', [
-        ('Content-type', 'text/plain'),
         ('X-Accel-Redirect', url),
     ]
