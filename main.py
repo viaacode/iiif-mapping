@@ -31,29 +31,37 @@ prefix = getenv("IIIF_PREFIX_URL", "/iipsrv/?IIIF=/media/5")
 
 
 def app(environ, start_response):
-    empty_response = iter([])
+    status, headers = response(environ)
+    headers.append(('Content-Length', '0'))
+    start_response(status, headers)
+    return iter([])
 
+
+def response(environ):
     if mappings is None:
-        start_response('503 Service Unavailable', [])
-        return empty_response
+        return '503 Service Unavailable', []
 
-    if environ['RAW_URI'] == '/':
-        start_response('200 OK', [])
-        return empty_response
+    uri = environ['RAW_URI']
+    if uri == '/':
+        return '200 OK', []
 
+    parts = uri.lstrip('/').split('/', 1)
+    pid = parts.pop(0)
     try:
-        pid, postfix = environ['RAW_URI'].lstrip('/').split('/', 1)
         mid = mappings[pid]
-    except (KeyError, ValueError):
-        start_response('404 Not Found', [])
-        return empty_response
+    except KeyError:
+        return '404 Not Found', []
 
-    url = [prefix, mid[0], mid, pid, postfix]
+    if not len(parts) or parts[0] == '':
+        # by default redirect to the info.json file
+        return '308 Permanent Redirect', [
+            ('Location', '/%s/info.json' % (pid,)),
+        ]
+
+    url = [prefix, mid[0], mid, pid, parts[0]]
     url = '/'.join(url)
-    response_headers = [
+
+    return '200 OK', [
         ('Content-type', 'text/plain'),
-        ('Content-Length', '0'),
         ('X-Accel-Redirect', url),
     ]
-    start_response('200 OK', response_headers)
-    return empty_response
