@@ -24,4 +24,4 @@ Usage:
 TODO
 ----
 
- - Make a backup available of mappings.csv (somewhere, to be decided)
+- Make a backup available of mappings.csv (somewhere, to be decided)
