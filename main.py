@@ -24,7 +24,7 @@ except FileNotFoundError:
     print("File not found!")
     mappings = {}
 
-prefix = "https://images.hetarchief.be/iipsrv/?IIIF=/media/5"
+prefix = getenv("IIIF_PREFIX_URL", "https://images.hetarchief.be/iipsrv/?IIIF=/media/5")
 
 
 def app(environ, start_response):
