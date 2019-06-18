@@ -18,7 +18,11 @@ class Mappings:
         return self.mappings[key]
 
 
-mappings = Mappings(getenv('IIIF_MAPPING_FILE', 'mappings.csv'))
+try:
+    mappings = Mappings(getenv('IIIF_MAPPING_FILE', 'mappings.csv'))
+except FileNotFoundError:
+    print("File not found!")
+    mappings = {}
 
 prefix = "https://images.hetarchief.be/iipsrv/?IIIF=/media/5"
 
