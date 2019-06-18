@@ -24,7 +24,7 @@ except FileNotFoundError:
     print("File not found!")
     mappings = {}
 
-prefix = getenv("IIIF_PREFIX_URL", "https://images.hetarchief.be/iipsrv/?IIIF=/media/5")
+prefix = getenv("IIIF_PREFIX_URL", "/iipsrv/?IIIF=/media/5")
 
 
 def app(environ, start_response):
@@ -39,7 +39,8 @@ def app(environ, start_response):
     url = '/'.join(url)
     response_headers = [
         ('Content-type', 'text/plain'),
-        ('Content-Length', str(len(url)))
+        ('Content-Length', '0'),
+        ('X-Accel-Redirect', url),
     ]
     start_response('200 OK', response_headers)
-    return iter([bytes(url, 'utf-8')])
+    return iter([])
