@@ -20,3 +20,8 @@ Usage:
 
         IIIF_MAPPING_FILE=/path/to/mappings.csv ./start-webserver.sh
 
+
+TODO
+----
+
+ - Make a backup available of mappings.csv (somewhere, to be decided)
