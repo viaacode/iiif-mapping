@@ -1,5 +1,8 @@
 from csv import reader
 from os import getenv
+import logging
+
+logging.basicConfig()
 
 
 class Mappings:
@@ -20,20 +23,30 @@ class Mappings:
 
 try:
     mappings = Mappings(getenv('IIIF_MAPPING_FILE', 'mappings.csv'))
-except FileNotFoundError:
-    print("File not found!")
-    mappings = {}
+except FileNotFoundError as e:
+    logging.getLogger().exception(e)
+    mappings = None
 
 prefix = getenv("IIIF_PREFIX_URL", "/iipsrv/?IIIF=/media/5")
 
 
 def app(environ, start_response):
+    empty_response = iter([])
+
+    if mappings is None:
+        start_response('503 Service Unavailable', [])
+        return empty_response
+
+    if environ['RAW_URI'] == '/':
+        start_response('200 OK', [])
+        return empty_response
+
     try:
         pid, postfix = environ['RAW_URI'].lstrip('/').split('/', 1)
         mid = mappings[pid]
     except (KeyError, ValueError):
-        start_response('444 No Response', [])
-        return iter([])
+        start_response('404 Not Found', [])
+        return empty_response
 
     url = [prefix, mid[0], mid, pid, postfix]
     url = '/'.join(url)
@@ -43,4 +56,4 @@ def app(environ, start_response):
         ('X-Accel-Redirect', url),
     ]
     start_response('200 OK', response_headers)
-    return iter([])
+    return empty_response
