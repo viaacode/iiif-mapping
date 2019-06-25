@@ -86,7 +86,7 @@ def response(environ):
     url = '/'.join(url)
 
     if postfix == 'info.json':
-        is_https = environ['wsgi.url_scheme'] == 'https'
+        is_https = getenv('IS_HTTPS', False)
         new_url = environ['HTTP_HOST']
         if is_https:
             new_url = 'https://' + new_url
