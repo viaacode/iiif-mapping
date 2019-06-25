@@ -29,7 +29,7 @@ except FileNotFoundError as e:
     logging.getLogger().exception(e)
     mappings = None
 
-prefix = getenv("IIIF_PREFIX_URL", "/iipsrv/?IIIF=/media/5")
+prefix = getenv("IIIF_PREFIX_URL", "http://images.hetarchief.be/iipsrv/?IIIF=/media/5")
 replace_id = re.compile(r'("@id"\s*:\s*")[^"]+(")')
 
 
