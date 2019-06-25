@@ -1,6 +1,7 @@
 from csv import reader
 from os import getenv
 import logging
+import requests
 
 logging.basicConfig()
 
@@ -31,26 +32,42 @@ prefix = getenv("IIIF_PREFIX_URL", "/iipsrv/?IIIF=/media/5")
 
 
 def app(environ, start_response):
-    status, headers = response(environ)
-    headers.append(('Content-Length', '0'))
+    resp = response(environ)
+    if type(resp) is str:
+        status = resp
+        resp = []
+    else:
+        status = resp[0]
+
+    try:
+        headers = resp[1]
+    except IndexError:
+        headers = []
+
+    try:
+        content = resp[2]
+    except IndexError:
+        content = b''
+
+    headers.append(('Content-Length', str(len(content))))
     start_response(status, headers)
-    return iter([])
+    return iter([content])
 
 
 def response(environ):
     if mappings is None:
-        return '503 Service Unavailable', []
+        return '503 Service Unavailable'
 
     uri = environ['RAW_URI']
     if uri == '/':
-        return '200 OK', []
+        return '200 OK'
 
     parts = uri.lstrip('/').split('/', 1)
     pid = parts.pop(0)
     try:
         mid = mappings[pid]
     except KeyError:
-        return '404 Not Found', []
+        return '404 Not Found'
 
     if not len(parts) or parts[0] == '':
         # by default redirect to the info.json file
@@ -58,8 +75,22 @@ def response(environ):
             ('Location', '/%s/info.json' % (pid,)),
         ]
 
-    url = [prefix, mid[0], mid, pid, parts[0]]
+    try:
+        postfix = parts.pop()
+    except IndexError:
+        postfix = ''
+
+    url = [prefix, mid[0], mid, pid, postfix]
     url = '/'.join(url)
+
+    is_https = environ['wsgi.url_scheme'] == 'https'
+
+    if postfix == 'info.json' and is_https:
+        contents = requests.get(url)
+        print(environ)
+        return '200 OK', [
+            ('Content-Type', 'application/json')
+        ], bytes(contents.content.replace(b'http://', b'https://'))
 
     return '200 OK', [
         ('X-Accel-Redirect', url),
