@@ -2,6 +2,7 @@ from csv import reader
 from os import getenv
 import logging
 import requests
+import re
 
 logging.basicConfig()
 
@@ -29,6 +30,7 @@ except FileNotFoundError as e:
     mappings = None
 
 prefix = getenv("IIIF_PREFIX_URL", "/iipsrv/?IIIF=/media/5")
+replace_id = re.compile(r'("@id"\s*:\s*")[^"]+(")')
 
 
 def app(environ, start_response):
@@ -83,14 +85,21 @@ def response(environ):
     url = [prefix, mid[0], mid, pid, postfix]
     url = '/'.join(url)
 
-    is_https = environ['wsgi.url_scheme'] == 'https'
-
-    if postfix == 'info.json' and is_https:
-        contents = requests.get(url)
-        print(environ)
+    if postfix == 'info.json':
+        is_https = environ['wsgi.url_scheme'] == 'https'
+        new_url = environ['HTTP_HOST']
+        if is_https:
+            new_url = 'https://' + new_url
+        else:
+            new_url = 'http://' + new_url
+        new_url += '/' + pid
+        contents = requests.get(url).content.decode('UTF-8')
+        contents = replace_id.sub(r'\1' + new_url + r'\2', contents)
+        if is_https:
+            contents = contents.replace('http://', 'https://')
         return '200 OK', [
             ('Content-Type', 'application/json')
-        ], bytes(contents.content.replace(b'http://', b'https://'))
+        ], bytes(contents, encoding='UTF-8')
 
     return '200 OK', [
         ('X-Accel-Redirect', url),
