@@ -29,7 +29,8 @@ except FileNotFoundError as e:
     logging.getLogger().exception(e)
     mappings = None
 
-prefix = getenv("IIIF_PREFIX_URL", "http://images.hetarchief.be/iipsrv/?IIIF=/media/5")
+prefix = getenv("IIIF_PREFIX_URI", "/iipsrv/?IIIF=/media/5")
+prefix_host = getenv('IIIF_PREFIX_HOST', "http://images.hetarchief.be")
 replace_id = re.compile(r'("@id"\s*:\s*")[^"]+(")')
 
 
@@ -52,7 +53,6 @@ def app(environ, start_response):
         content = b''
 
     headers.append(('Content-Length', str(len(content))))
-    headers.append(('Access-Control-Allow-Origin', '*'))
     start_response(status, headers)
     return iter([content])
 
@@ -86,22 +86,25 @@ def response(environ):
     url = [prefix, mid[0], mid, pid, postfix]
     url = '/'.join(url)
 
-    if postfix == 'info.json':
-        is_https = getenv('IS_HTTPS', False)
-        new_url = environ['HTTP_HOST']
-        if is_https:
-            new_url = 'https://' + new_url
-        else:
-            new_url = 'http://' + new_url
-        new_url += '/' + pid
-        contents = requests.get(url).content.decode('UTF-8')
-        contents = replace_id.sub(r'\1' + new_url + r'\2', contents)
-        if is_https:
-            contents = contents.replace('http://', 'https://')
+    if postfix != 'info.json':
+        logging.getLogger().info(url)
         return '200 OK', [
-            ('Content-Type', 'application/json'),
-        ], bytes(contents, encoding='UTF-8')
+            ('X-Accel-Redirect', url),
+        ]
+
+    is_https = getenv('IS_HTTPS', False)
+    new_url = environ['HTTP_HOST']
+    if is_https:
+        new_url = 'https://' + new_url
+    else:
+        new_url = 'http://' + new_url
+    new_url += '/' + pid
+    contents = requests.get(prefix_host + url).content.decode('UTF-8')
+    contents = replace_id.sub(r'\1' + new_url + r'\2', contents)
+    if is_https:
+        contents = contents.replace('http://', 'https://')
 
     return '200 OK', [
-        ('X-Accel-Redirect', url),
-    ]
+        ('Content-Type', 'application/json'),
+        ('Access-Control-Allow-Origin', '*'),
+    ], bytes(contents, encoding='UTF-8')
