@@ -52,6 +52,7 @@ def app(environ, start_response):
         content = b''
 
     headers.append(('Content-Length', str(len(content))))
+    headers.append(('Access-Control-Allow-Origin', '*'))
     start_response(status, headers)
     return iter([content])
 
@@ -98,7 +99,7 @@ def response(environ):
         if is_https:
             contents = contents.replace('http://', 'https://')
         return '200 OK', [
-            ('Content-Type', 'application/json')
+            ('Content-Type', 'application/json'),
         ], bytes(contents, encoding='UTF-8')
 
     return '200 OK', [
