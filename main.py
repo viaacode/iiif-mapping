@@ -101,8 +101,6 @@ def response(environ):
     new_url += '/' + pid
     contents = requests.get(prefix_host + url).content.decode('UTF-8')
     contents = replace_id.sub(r'\1' + new_url + r'\2', contents)
-    if is_https:
-        contents = contents.replace('http://', 'https://')
 
     return '200 OK', [
         ('Content-Type', 'application/json'),
