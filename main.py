@@ -3,24 +3,60 @@ from os import getenv
 import logging
 import requests
 import re
+from lump.http import dbus_connect
+from lxml import objectify
+from collections import namedtuple
+from urllib.parse import urlparse
 
 logging.basicConfig()
 
+Item = namedtuple('Item', ['pid', 'mediafile_id', 'asset_id', 'image_path'])
+mediamosa_config = {
+    "host": getenv('MEDIAMOSA_HOST'),
+    "user": getenv('MEDIAMOSA_USER'),
+    "password": getenv('MEDIAMOSA_PASS')
+}
+
 
 class Mappings:
+    is_checked = set()
+
     def __init__(self, csv_file):
         mappings_ = dict()
         with open(csv_file) as f:
             csv = reader(f)
             header = next(csv)
-            idx_mid = header.index('mid')
             idx_pid = header.index('pid')
+            idx_mediafile_id = header.index('mediafile_id')
+            idx_asset_id = header.index('asset_id')
             for line in csv:
-                mappings_[line[idx_pid]] = line[idx_mid]
+                mappings_[line[idx_pid]] = Item(
+                    line[idx_pid],
+                    line[idx_mediafile_id],
+                    line[idx_asset_id],
+                    None
+                )
         self.mappings = mappings_
 
+    def _assure_iiif_available(self, item):
+        conn = dbus_connect(**mediamosa_config)
+
+        url = mediamosa_config['host']
+        url += '/asset/%s/play?user_id=%s&mediafile_id=%s&autostart=true&count_play=true'
+        url %= (item.asset_id, 'iiif', item.mediafile_id)
+
+        image = objectify.fromstring(conn.get(url).content)
+        image = str(image['items']['item']['output'])
+        image = urlparse(image).path
+        item = item._replace(image_path=image)
+        self.mappings[item.pid] = item
+        return item
+
     def __getitem__(self, key):
-        return self.mappings[key]
+        item = self.mappings[key]
+        if item.image_path is not None:
+            return item
+        return self._assure_iiif_available(item)
 
 
 try:
@@ -29,7 +65,7 @@ except FileNotFoundError as e:
     logging.getLogger().exception(e)
     mappings = None
 
-prefix = getenv("IIIF_PREFIX_URI", "/iipsrv/?IIIF=/media/5")
+prefix = getenv("IIIF_PREFIX_URI", "/iipsrv/?IIIF=")
 prefix_host = getenv('IIIF_PREFIX_HOST', "http://images.hetarchief.be")
 replace_id = re.compile(r'("@id"\s*:\s*")[^"]+(")')
 
@@ -68,7 +104,7 @@ def response(environ):
     parts = uri.lstrip('/').split('/', 1)
     pid = parts.pop(0)
     try:
-        mid = mappings[pid]
+        item = mappings[pid]
     except KeyError:
         return '404 Not Found'
 
@@ -83,7 +119,7 @@ def response(environ):
     except IndexError:
         postfix = ''
 
-    url = [prefix, mid[0], mid, pid, postfix]
+    url = [prefix + item.image_path, postfix]
     url = '/'.join(url)
 
     if postfix != 'info.json':
