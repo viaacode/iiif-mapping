@@ -37,7 +37,7 @@ Installation
 
         git clone https://github.com/viaacode/iiif-mapping.git
         cd iiif-mapping
-        pip install -r requirements.pip
+        pip install -r requirements.txt
 
 
 Usage
