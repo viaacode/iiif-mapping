@@ -33,11 +33,12 @@ Installation
 1. Clone the repository
 2. Install python requirements (use `pip` or `pip3` depending on your python installation(s))
 
-```
-git clone https://github.com/viaacode/iiif-mapping.git
-cd iiif-mapping
-pip install -r requirements.pip
-```
+.. code-block:: bash
+
+        git clone https://github.com/viaacode/iiif-mapping.git
+        cd iiif-mapping
+        pip install -r requirements.pip
+
 
 Usage
 -----
