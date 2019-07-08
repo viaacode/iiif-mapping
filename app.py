@@ -8,7 +8,7 @@ from lxml import objectify
 from collections import namedtuple
 from urllib.parse import urlparse
 
-logging.basicConfig()
+logger = logging.getLogger()
 
 Item = namedtuple('Item', ['pid', 'mediafile_id', 'asset_id', 'image_path'])
 mediamosa_config = {
@@ -66,8 +66,9 @@ except FileNotFoundError as e:
     mappings = None
 
 prefix = getenv("IIIF_PREFIX_URI", "/iipsrv/?IIIF=")
-prefix_host = getenv('IIIF_PREFIX_HOST', "http://images.hetarchief.be")
+prefix_host = getenv('IIIF_PREFIX_HOST', "https://images.hetarchief.be")
 replace_id = re.compile(r'("@id"\s*:\s*")[^"]+(")')
+remove_query_string = re.compile(r'\?.*$')
 
 
 def app(environ, start_response):
@@ -97,7 +98,7 @@ def response(environ):
     if mappings is None:
         return '503 Service Unavailable'
 
-    uri = environ['RAW_URI']
+    uri = remove_query_string.sub('', environ['RAW_URI'])
     if uri == '/':
         return '200 OK'
 

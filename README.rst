@@ -43,8 +43,31 @@ Installation
 Usage
 -----
 
+1. Make sure these environmental variables are properly defined:
+
 .. code-block:: bash
 
-        MEDIAMOSA_HOST=https://example.com MEDIAMOSA_USER=username MEDIAMOSA_PASS=password IIIF_MAPPING_FILE=/path/to/mappings.csv ./start-webserver.sh
+        MEDIAMOSA_HOST=https://example.com
+        MEDIAMOSA_USER=username
+        MEDIAMOSA_PASS=password
+
+Optional (has sensible defaults):
+
+.. code-block:: bash
+
+        # default is mappings.csv from current working directory
+        IIIF_MAPPING_FILE=/path/to/mappings.csv
+
+2. Start the webserver:
+
+.. code-block:: bash
+
+        ./start-webserver.sh
+
+or (mainly for testing and development):
+
+.. code-block:: bash
+
+        python3 start_gunicorn_interactive.py
 
 
