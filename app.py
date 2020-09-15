@@ -7,6 +7,7 @@ from lump.http import dbus_connect
 from lxml import objectify
 from collections import namedtuple
 from urllib.parse import urlparse
+import json
 
 logger = logging.getLogger()
 
@@ -138,6 +139,10 @@ def response(environ):
     new_url += '/' + pid
     contents = requests.get(prefix_host + url).content.decode('UTF-8')
     contents = replace_id.sub(r'\1' + new_url + r'\2', contents)
+
+    contents = json.loads(contents)
+    contents["rights"] = getenv("RIGHTS_URL")
+    contents = json.dumps(contents)
 
     return '200 OK', [
         ('Content-Type', 'application/json'),
