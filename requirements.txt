@@ -1,5 +1,5 @@
 gunicorn>=19.9.0
-requests==2.22.0
+requests==2.31.0
 #lump==0.1.5
 git+https://github.com/viaacode/lump/@0.1.5#egg=lump
 lxml==4.6.5
