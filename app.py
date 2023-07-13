@@ -8,7 +8,7 @@ from lxml import objectify
 from collections import namedtuple
 from urllib.parse import urlparse
 import json
-
+from json import JSONDecodeError
 logger = logging.getLogger()
 
 Item = namedtuple('Item', ['pid', 'mediafile_id', 'asset_id', 'image_path'])
@@ -17,6 +17,18 @@ mediamosa_config = {
     "user": getenv('MEDIAMOSA_USER'),
     "password": getenv('MEDIAMOSA_PASS')
 }
+
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch = logging.StreamHandler()
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+
+logger.info('test log')
+requests_log = logging.getLogger("requests.packages.urllib3")
+requests_log.setLevel(logging.DEBUG)
+requests_log.propagate = True
 
 
 class Mappings:
@@ -123,7 +135,7 @@ def response(environ):
 
     url = [prefix + item.image_path, postfix]
     url = '/'.join(url)
-
+    logger.info(f"url: {url}")
     if postfix != 'info.json':
         logging.getLogger().info(url)
         return '200 OK', [
@@ -136,13 +148,24 @@ def response(environ):
         new_url = 'https://' + new_url
     else:
         new_url = 'http://' + new_url
+    logger.info(f"new_url: {new_url}")
     new_url += '/' + pid
     contents = requests.get(prefix_host + url).content.decode('UTF-8')
+    logger.debug(f"contents.decode {contents}")
     contents = replace_id.sub(r'\1' + new_url + r'\2', contents)
-
-    contents = json.loads(contents)
-    contents["rights"] = getenv("RIGHTS_URL")
-    contents = json.dumps(contents)
+    logger.debug(f"content replace_id: {contents}")
+    contents_text = contents
+    logger.info(f"contents: {contents}")
+    try:
+        contents = json.loads(contents)
+        contents["rights"] = getenv("RIGHTS_URL")
+        contents = json.dumps(contents)
+    except JSONDecodeError:
+        logger.error('response is not json')
+        return '500 NOK', [
+            ('Content-Type', 'application/text'),
+            ('Access-Control-Allow-Origin', '*'),
+        ], bytes(contents_text, encoding='UTF-8')
 
     return '200 OK', [
         ('Content-Type', 'application/json'),
